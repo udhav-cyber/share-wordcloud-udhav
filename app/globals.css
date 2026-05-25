@@ -73,6 +73,14 @@ h2 {
   margin-bottom: 8px;
 }
 
+h3 {
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+  margin: 16px 0 10px;
+  color: var(--foreground);
+  font-weight: 700;
+}
+
 .subtitle {
   color: var(--muted);
   font-size: 1.1rem;
@@ -122,6 +130,8 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  overflow-y: auto;
+  max-height: 750px;
 }
 
 label {
@@ -130,6 +140,11 @@ label {
   font-size: 0.88rem;
   font-weight: 700;
   gap: 8px;
+}
+
+input[type="checkbox"] {
+  width: auto;
+  cursor: pointer;
 }
 
 input,
@@ -141,6 +156,11 @@ select {
   background: rgba(255, 255, 255, 0.9);
   outline: none;
   padding: 13px 14px;
+}
+
+input[type="range"] {
+  cursor: pointer;
+  padding: 0;
 }
 
 input:focus,
@@ -160,6 +180,24 @@ button[type="submit"] {
   box-shadow: 0 14px 28px rgba(255, 122, 89, 0.28);
 }
 
+.clear-bg-btn {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--foreground);
+  background: rgba(255, 122, 89, 0.1);
+  cursor: pointer;
+  font-weight: 600;
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.clear-bg-btn:hover {
+  background: rgba(255, 122, 89, 0.2);
+  border-color: rgba(255, 122, 89, 0.5);
+}
+
 .status {
   color: var(--muted);
   font-size: 0.9rem;
@@ -167,8 +205,31 @@ button[type="submit"] {
   margin-bottom: 0;
 }
 
+.background-section {
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.opacity-value {
+  font-size: 0.8rem;
+  color: var(--accent);
+  font-weight: 600;
+  margin-left: 8px;
+}
+
 .cloud-panel {
   min-height: 520px;
+  overflow: hidden;
+  position: relative;
+}
+
+.cloud-overlay {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 28px;
 }
 
 .cloud-header {
@@ -194,6 +255,7 @@ button[type="submit"] {
   gap: 14px;
   justify-content: center;
   min-height: 390px;
+  flex: 1;
 }
 
 .cloud-word {
@@ -319,5 +381,9 @@ button[type="submit"] {
 
   .page-shell {
     padding-top: 28px;
+  }
+
+  .form-panel {
+    max-height: none;
   }
 }
