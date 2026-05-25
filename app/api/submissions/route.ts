@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { list, put } from "@vercel/blob";
+import { get, put } from "@vercel/blob";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 
@@ -47,20 +47,16 @@ const seedSubmissions: Submission[] = [
 
 async function readSubmissions(): Promise<StoreRead> {
   if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const blobs = await list({ prefix: blobPath, limit: 1 });
-    const blob = blobs.blobs.find((item) => item.pathname === blobPath);
+    const blob = await get(blobPath, { access: "private", useCache: false });
 
     if (!blob) {
       await writeSubmissions(seedSubmissions);
       return { submissions: seedSubmissions, storageConfigured: true };
     }
 
-    const response = await fetch(blob.downloadUrl, { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error("Unable to read submissions from Vercel Blob.");
-    }
+    const text = await new Response(blob.stream).text();
 
-    return { submissions: (await response.json()) as Submission[], storageConfigured: true };
+    return { submissions: JSON.parse(text) as Submission[], storageConfigured: true };
   }
 
   if (process.env.VERCEL) {
@@ -79,7 +75,7 @@ async function readSubmissions(): Promise<StoreRead> {
 async function writeSubmissions(submissions: Submission[]) {
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     await put(blobPath, JSON.stringify(submissions, null, 2), {
-      access: "public",
+      access: "private",
       allowOverwrite: true,
       contentType: "application/json"
     });
