@@ -39,6 +39,12 @@ export default function Home() {
   const [category, setCategory] = useState<Category>("AI");
   const [filter, setFilter] = useState<Category | "All">("All");
   const [status, setStatus] = useState("Loading ideas...");
+  
+  // Background image states
+  const [backgroundImage, setBackgroundImage] = useState<string>("");
+  const [backgroundOpacity, setBackgroundOpacity] = useState(0.3);
+  const [backgroundSize, setBackgroundSize] = useState("cover");
+  const [useBackground, setUseBackground] = useState(false);
 
   async function loadSubmissions() {
     const response = await fetch("/api/submissions", { cache: "no-store" });
@@ -110,6 +116,34 @@ export default function Home() {
     setStatus("Added. The cloud is refreshed for everyone on this deployment.");
   }
 
+  function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setBackgroundImage(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function clearBackground() {
+    setBackgroundImage("");
+    setUseBackground(false);
+  }
+
+  const cloudPanelStyle: React.CSSProperties = useBackground && backgroundImage ? {
+    backgroundImage: `url(${backgroundImage})`,
+    backgroundSize: backgroundSize as any,
+    backgroundPosition: "center",
+    backgroundAttachment: "fixed"
+  } : {};
+
+  const cloudOverlayStyle: React.CSSProperties = useBackground && backgroundImage ? {
+    background: `rgba(255, 255, 255, ${1 - backgroundOpacity})`,
+    backdropFilter: "blur(4px)"
+  } : {};
+
   return (
     <main className="page-shell">
       <section className="hero">
@@ -169,44 +203,103 @@ export default function Home() {
 
           <button type="submit">Add to cloud</button>
           <p className="status">{status}</p>
+
+          {/* Background Image Section */}
+          <div className="background-section">
+            <h3>Background Image</h3>
+            
+            <label>
+              <input
+                type="checkbox"
+                checked={useBackground}
+                onChange={(e) => setUseBackground(e.target.checked)}
+              />
+              Enable background image
+            </label>
+
+            {useBackground && (
+              <>
+                <label>
+                  Upload Image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                </label>
+
+                {backgroundImage && (
+                  <>
+                    <label>
+                      Background Opacity
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={backgroundOpacity}
+                        onChange={(e) => setBackgroundOpacity(parseFloat(e.target.value))}
+                      />
+                      <span className="opacity-value">{Math.round(backgroundOpacity * 100)}%</span>
+                    </label>
+
+                    <label>
+                      Background Size
+                      <select value={backgroundSize} onChange={(e) => setBackgroundSize(e.target.value)}>
+                        <option value="cover">Cover</option>
+                        <option value="contain">Contain</option>
+                        <option value="100% 100%">Stretch</option>
+                      </select>
+                    </label>
+
+                    <button type="button" onClick={clearBackground} className="clear-bg-btn">
+                      Clear Background
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </form>
 
-        <section className="panel cloud-panel">
-          <div className="cloud-header">
-            <div>
-              <h2>Word cloud</h2>
-              <p>{totalVotes} visible submission{totalVotes === 1 ? "" : "s"}</p>
+        <section className="panel cloud-panel" style={cloudPanelStyle}>
+          <div className="cloud-overlay" style={cloudOverlayStyle}>
+            <div className="cloud-header">
+              <div>
+                <h2>Word cloud</h2>
+                <p>{totalVotes} visible submission{totalVotes === 1 ? "" : "s"}</p>
+              </div>
+              <select value={filter} onChange={(event) => setFilter(event.target.value as Category | "All")}>
+                <option value="All">All groups</option>
+                {categories.map((group) => (
+                  <option key={group} value={group}>
+                    {group}
+                  </option>
+                ))}
+              </select>
             </div>
-            <select value={filter} onChange={(event) => setFilter(event.target.value as Category | "All")}>
-              <option value="All">All groups</option>
-              {categories.map((group) => (
-                <option key={group} value={group}>
-                  {group}
-                </option>
-              ))}
-            </select>
-          </div>
 
-          <div className="cloud">
-            {stats.map((item, index) => {
-              const mainCategory = item.categories[0];
-              const size = 1 + item.count / maxCount * 2.4;
-              return (
-                <button
-                  className="cloud-word"
-                  key={item.word}
-                  style={{
-                    "--word-color": categoryColors[mainCategory],
-                    "--word-size": `${size}rem`,
-                    "--delay": `${index * 40}ms`
-                  } as React.CSSProperties}
-                  title={`${item.word}: ${item.count} vote(s) by ${item.contributors.join(", ")}`}
-                >
-                  {item.word}
-                  <span>{item.count}</span>
-                </button>
-              );
-            })}
+            <div className="cloud">
+              {stats.map((item, index) => {
+                const mainCategory = item.categories[0];
+                const size = 1 + item.count / maxCount * 2.4;
+                return (
+                  <button
+                    className="cloud-word"
+                    key={item.word}
+                    style={{
+                      "--word-color": categoryColors[mainCategory],
+                      "--word-size": `${size}rem`,
+                      "--delay": `${index * 40}ms`
+                    } as React.CSSProperties}
+                    title={`${item.word}: ${item.count} vote(s) by ${item.contributors.join(", ")}`}
+                  >
+                    {item.word}
+                    <span>{item.count}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </section>
       </section>
