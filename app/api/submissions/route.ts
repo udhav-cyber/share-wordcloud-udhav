@@ -13,6 +13,11 @@ export type Submission = {
   createdAt: string;
 };
 
+type StoreRead = {
+  submissions: Submission[];
+  storageConfigured: boolean;
+};
+
 const allowedUsers = [
   "Aarav",
   "Maya",
@@ -40,14 +45,14 @@ const seedSubmissions: Submission[] = [
   { id: "seed-7", username: "Keshav", word: "Entropy", category: "Science", createdAt: new Date(Date.now() - 1800000).toISOString() }
 ];
 
-async function readSubmissions() {
+async function readSubmissions(): Promise<StoreRead> {
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const blobs = await list({ prefix: blobPath, limit: 1 });
     const blob = blobs.blobs.find((item) => item.pathname === blobPath);
 
     if (!blob) {
       await writeSubmissions(seedSubmissions);
-      return seedSubmissions;
+      return { submissions: seedSubmissions, storageConfigured: true };
     }
 
     const response = await fetch(blob.downloadUrl, { cache: "no-store" });
@@ -55,15 +60,19 @@ async function readSubmissions() {
       throw new Error("Unable to read submissions from Vercel Blob.");
     }
 
-    return (await response.json()) as Submission[];
+    return { submissions: (await response.json()) as Submission[], storageConfigured: true };
+  }
+
+  if (process.env.VERCEL) {
+    return { submissions: seedSubmissions, storageConfigured: false };
   }
 
   try {
     const content = await readFile(localDataPath, "utf8");
-    return JSON.parse(content) as Submission[];
+    return { submissions: JSON.parse(content) as Submission[], storageConfigured: true };
   } catch {
     await writeSubmissions(seedSubmissions);
-    return seedSubmissions;
+    return { submissions: seedSubmissions, storageConfigured: true };
   }
 }
 
@@ -82,10 +91,13 @@ async function writeSubmissions(submissions: Submission[]) {
 }
 
 export async function GET() {
+  const store = await readSubmissions();
+
   return NextResponse.json({
     allowedUsers,
     categories,
-    submissions: await readSubmissions()
+    submissions: store.submissions,
+    storageConfigured: store.storageConfigured
   });
 }
 
@@ -115,7 +127,15 @@ export async function POST(request: Request) {
     createdAt: new Date().toISOString()
   };
 
-  const submissions = await readSubmissions();
+  const store = await readSubmissions();
+  if (!store.storageConfigured) {
+    return NextResponse.json(
+      { error: "Vercel Blob is not connected. Add a Blob store to enable submissions." },
+      { status: 503 }
+    );
+  }
+
+  const submissions = store.submissions;
   submissions.unshift(submission);
   await writeSubmissions(submissions);
 

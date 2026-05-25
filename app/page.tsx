@@ -51,7 +51,7 @@ export default function Home() {
     setAllowedUsers(data.allowedUsers);
     setCategories(data.categories);
     setSubmissions(data.submissions);
-    setStatus("Ready for new ideas.");
+    setStatus(data.storageConfigured ? "Ready for new ideas." : "Connect Vercel Blob to save new submissions.");
   }
 
   useEffect(() => {
